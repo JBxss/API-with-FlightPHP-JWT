@@ -84,4 +84,38 @@ Flight::route('POST /users', function(){
     Flight::json($array);
 });
 
+Flight::route('PUT /users', function(){
+    $db = Flight::db();
+    $id = Flight::request()->data->id;
+    $nombre = Flight::request()->data->nombre;
+    $email = Flight::request()->data->correo;
+    $pass = Flight::request()->data->contraseña;
+    $telefono = Flight::request()->data->telefono;
+
+    $query = $db->prepare("UPDATE tbl_usuarios SET nombre = :nombre, correo = :email, contraseña = :pass, telefono = :telefono WHERE id = :id");
+
+    $array = [
+        "error" => "Hubo un error al agregar los registros, por favor verifica todos los campos",
+        "status" => "error"
+    ];
+
+    if ($query->execute([":nombre" => $nombre, ":email" => $email, ":pass" => $pass, ":telefono" => $telefono, ":id" => $id])) {
+
+        $array = [
+
+            "data" => [
+            "Id" => $id,
+            "Nombre" => $nombre,
+            "Email" => $email,
+            "Contraseña" => $pass,
+            "Celular" => $telefono
+            ],
+
+            "status" => "success" 
+        ];
+    };
+
+    Flight::json($array);
+});
+
 Flight::start();
