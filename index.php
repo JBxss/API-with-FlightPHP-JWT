@@ -28,4 +28,60 @@ Flight::route('GET /users', function(){
 
 });
 
+Flight::route('GET /users/@id', function($id){
+    $db = Flight::db();
+    $query = $db->prepare("SELECT * FROM tbl_usuarios WHERE id = :id");
+    $query->execute([":id" => $id]);
+    $data = $query->fetch();
+
+
+        $array = [
+            "Id" => $data['id'],
+            "Nombre" => $data['nombre'],
+            "Email" => $data['correo'],
+            "Contraseña" => $data['contraseña'],
+            "Celular" => $data['telefono'],
+            "Rol_Id" => $data['rol_id'],
+            "Estado" => $data['status'],
+        ];
+
+    
+    Flight::json($array);
+
+});
+
+Flight::route('POST /users', function(){
+    $db = Flight::db();
+
+    $nombre = Flight::request()->data->nombre;
+    $email = Flight::request()->data->correo;
+    $pass = Flight::request()->data->contraseña;
+    $telefono = Flight::request()->data->telefono;
+
+    $query = $db->prepare("INSERT INTO tbl_usuarios (nombre, correo, contraseña, telefono) VALUES (:nombre, :email, :pass, :telefono)");
+
+    $array = [
+        "error" => "Hubo un error al agregar los registros, por favor verifica todos los campos",
+        "status" => "error"
+    ];
+
+    if ($query->execute([":nombre" => $nombre, ":email" => $email, ":pass" => $pass, ":telefono" => $telefono])) {
+
+        $array = [
+
+            "data" => [
+            "Id" => $db->lastInsertId(),
+            "Nombre" => $nombre,
+            "Email" => $email,
+            "Contraseña" => $pass,
+            "Celular" => $telefono
+            ],
+
+            "status" => "success" 
+        ];
+    };
+
+    Flight::json($array);
+});
+
 Flight::start();
