@@ -1,4 +1,7 @@
 <?php
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 require 'vendor/autoload.php';
 Flight::register('db', 'PDO', array('mysql:host=localhost;dbname=api','root',''));
 
@@ -143,6 +146,37 @@ Flight::route('DELETE /users', function(){
     };
 
     Flight::json($array);
+});
+
+Flight::route('POST /auth', function(){
+
+    $db = Flight::db();
+
+    $email = Flight::request()->data->correo;
+    $pass = Flight::request()->data->contraseña;
+    $query = $db->prepare("SELECT * FROM tbl_usuarios WHERE correo = :email and contraseña = :pass");
+
+    $array = [
+        "error" => "Hubo un error no se pudo validar su identidad",
+        "status" => "error"
+    ];
+
+    if ($query->execute([":email" => $email, ":pass" => $pass])) {
+        
+        $user = $query->fetch();
+        $now = strtotime("now");
+        $key = 'CONTRASEÑA_EJEMPLO';
+        $payload = [
+        'exp' => $now + 3600,
+        'data' => $user['id']
+        ];
+    
+        $jwt = JWT::encode($payload, $key, 'HS256');
+        $array = ["token" => $jwt];
+    };
+
+    Flight::json($array);
+
 });
 
 Flight::start();
