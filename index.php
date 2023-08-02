@@ -118,4 +118,31 @@ Flight::route('PUT /users', function(){
     Flight::json($array);
 });
 
+Flight::route('DELETE /users', function(){
+
+    $db = Flight::db();
+    $id = Flight::request()->data->id;
+
+    $query = $db->prepare("DELETE from tbl_usuarios WHERE id = :id");
+
+    $array = [
+        "error" => "Hubo un error al agregar los registros, por favor verifica todos los campos",
+        "status" => "error"
+    ];
+
+    if ($query->execute([":id" => $id])) {
+
+        $array = [
+
+            "data" => [
+            "Id" => $id
+            ],
+
+            "status" => "success" 
+        ];
+    };
+
+    Flight::json($array);
+});
+
 Flight::start();
