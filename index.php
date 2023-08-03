@@ -3,9 +3,51 @@
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 require 'vendor/autoload.php';
-Flight::register('db', 'PDO', array('mysql:host=localhost;dbname=api','root',''));
+
+function getToken() {
+
+    $headers = apache_request_headers();
+
+    if (!isset($headers["Authorization"])) {
+        Flight::halt(403, json_encode([
+            "error" => "Unauthenticated Request",
+            "status" => "error"
+        ]));
+    }
+
+    $authorization = $headers["Authorization"];
+    $authorizationArray = explode(" ", $authorization);
+    $token = $authorizationArray[1];
+
+    try {
+        return JWT::decode($token, new Key("CONTRASEÑA_EJEMPLO", "HS256"));
+    } catch (\Throwable $th) {
+        Flight::halt(403, json_encode([
+            "error" => $th->getMessage(),
+            "status" => "error"
+        ]));
+    }
+
+}
+
+function validateToken() {
+    $info = getToken();
+    $db = Flight::db();
+    $query = $db->prepare("SELECT * FROM tbl_usuarios WHERE id = :id");
+    $query->execute([":id" => $info->data]);
+    $rows = $query->fetchColumn();
+    return $rows;
+}
+
+Flight::register('db', 'PDO', array('mysql:host=localhost;dbname=api','root',''),
+  function($db){
+    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+  }
+);
 
 Flight::route('GET /users', function(){
+
     $db = Flight::db();
     $query = $db->prepare("SELECT * FROM tbl_usuarios");
     $query->execute();
@@ -32,6 +74,7 @@ Flight::route('GET /users', function(){
 });
 
 Flight::route('GET /users/@id', function($id){
+
     $db = Flight::db();
     $query = $db->prepare("SELECT * FROM tbl_usuarios WHERE id = :id");
     $query->execute([":id" => $id]);
@@ -47,15 +90,21 @@ Flight::route('GET /users/@id', function($id){
             "Rol_Id" => $data['rol_id'],
             "Estado" => $data['status'],
         ];
-
-    
+  
     Flight::json($array);
 
 });
 
 Flight::route('POST /users', function(){
-    $db = Flight::db();
 
+    if (!validateToken()) {
+        Flight::halt(403, json_encode([
+            "error" => "Unauthorized",
+            "status" => "error"
+        ]));
+    }
+
+    $db = Flight::db();
     $nombre = Flight::request()->data->nombre;
     $email = Flight::request()->data->correo;
     $pass = Flight::request()->data->contraseña;
@@ -88,6 +137,14 @@ Flight::route('POST /users', function(){
 });
 
 Flight::route('PUT /users', function(){
+
+    if (!validateToken()) {
+        Flight::halt(403, json_encode([
+            "error" => "Unauthorized",
+            "status" => "error"
+        ]));
+    }
+
     $db = Flight::db();
     $id = Flight::request()->data->id;
     $nombre = Flight::request()->data->nombre;
@@ -123,6 +180,13 @@ Flight::route('PUT /users', function(){
 
 Flight::route('DELETE /users', function(){
 
+    if (!validateToken()) {
+        Flight::halt(403, json_encode([
+            "error" => "Unauthorized",
+            "status" => "error"
+        ]));
+    }
+    
     $db = Flight::db();
     $id = Flight::request()->data->id;
 
