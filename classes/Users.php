@@ -16,7 +16,7 @@ class Users
         Flight::register(
             'db',
             'PDO',
-            array('mysql:host=localhost;dbname=api', 'root', '')
+            array('mysql:host='.$_ENV['DB_HOST'].';dbname='.$_ENV['DB_NAME'], $_ENV['DB_USER'], '')
         );
 
         $this->db = Flight::db();
@@ -39,7 +39,7 @@ class Users
 
             $user = $query->fetch();
             $now = strtotime("now");
-            $key = 'CONTRASEÑA_EJEMPLO';
+            $key = $_ENV['JWT_SECRET_KEY'];
             $payload = [
                 'exp' => $now + 3600,
                 'data' => $user['id']
@@ -232,9 +232,10 @@ class Users
         $authorization = $headers["Authorization"];
         $authorizationArray = explode(" ", $authorization);
         $token = $authorizationArray[1];
+        $key = $_ENV['JWT_SECRET_KEY'];
 
         try {
-            return JWT::decode($token, new Key("CONTRASEÑA_EJEMPLO", "HS256"));
+            return JWT::decode($token, new Key($key, "HS256"));
         } catch (\Throwable $th) {
             Flight::halt(403, json_encode([
                 "error" => $th->getMessage(),

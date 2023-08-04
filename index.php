@@ -3,6 +3,8 @@
 require 'vendor/autoload.php';
 require 'classes/Users.php';
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
 $users = new Users();
 
 Flight::route('GET /users', [$users, "SelectAll"]);
